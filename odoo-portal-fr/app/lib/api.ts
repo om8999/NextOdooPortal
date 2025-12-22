@@ -49,3 +49,28 @@ export async function deleteUser(
 
   if (!res.ok) throw new Error("Delete failed");
 }
+
+export async function changeUserPassword(
+  userId: number,
+  newPassword: string
+) {
+  const token = localStorage.getItem("token");
+
+  const res = await fetch("http://127.0.0.1:9000/admin/change-password", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      user_id: userId,
+      new_password: newPassword,
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to change password");
+  }
+
+  return res.json();
+}

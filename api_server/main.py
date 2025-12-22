@@ -254,3 +254,33 @@ def delete_user(data: DeleteUserModel, request: Request):
 
     return {"success": True}
 
+class ChangePasswordModel(BaseModel):
+    user_id: int
+    new_password: str
+
+
+@app.post("/admin/change-password")
+def change_password(data: ChangePasswordModel, request: Request):
+    user = request.state.user
+
+    if not user.get("is_admin"):
+        raise HTTPException(status_code=403, detail="Admin only")
+
+    try:
+        admin_rpc = OdooRPC(
+            db="TESTING_SCANNING_SHIPMENT",
+            user=ODOO_ADMIN_USER,
+            pwd=ODOO_ADMIN_PASS,
+            url="http://localhost:8069",
+        )
+
+        admin_rpc.call(
+            "res.users",
+            "write",
+            args=[[data.user_id], {"password": data.new_password}],
+        )
+
+        return {"success": True}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

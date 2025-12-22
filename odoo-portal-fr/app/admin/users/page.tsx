@@ -21,7 +21,10 @@ export default function AdminUsersPage() {
   const [password, setPassword] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
-
+  const [newPassword, setNewPassword] = useState("");
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [mode, setMode] = useState<"delete" | "password" | null>(null);
+  
   useEffect(() => {
     async function init() {
       try {
@@ -103,10 +106,22 @@ export default function AdminUsersPage() {
                   <td className="border-b border-white/20 px-4 py-2 text-center text-white">
                     {u.active ? "✅" : "❌"}
                   </td>
-                  <td className="border-b border-white/20 px-4 py-2 text-center">
+                  <td className="border-b border-white/20 px-4 py-2 text-center space-x-2">
                     <button
                       onClick={() => {
                         setSelectedUser(u);
+                        setMode("password");
+                        setNewPassword("");
+                      }}
+                      className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition"
+                    >
+                      Change Password
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setSelectedUser(u);
+                        setMode("delete");
                         setPassword("");
                       }}
                       disabled={u.login === currentUser?.login}
@@ -125,55 +140,120 @@ export default function AdminUsersPage() {
       {/* Modal */}
       {selectedUser && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white/90 text-gray-800 placeholder-gray-400 backdrop-blur-xl p-6 rounded-2xl shadow-2xl w-full max-w-md animate-slide-in">
-            <h2 className="text-2xl font-bold mb-2 text-gray-800">
-              Confirm Delete
-            </h2>
-            <p className="text-gray-600 mb-4">
-              Enter password for <b>{selectedUser.login}</b> to confirm deletion.
-            </p>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full border border-gray-300 p-2 rounded mb-4 focus:outline-none focus:ring-2 focus:ring-red-400"
-              placeholder="User password"
-            />
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setSelectedUser(null)}
-                className="px-4 py-2 rounded border hover:bg-gray-100 transition"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={async () => {
-                  if (!password) return;
-                  try {
-                    setDeleting(true);
-                    await deleteUser(
-                      selectedUser.id,
-                      selectedUser.login,
-                      password
-                    );
-                    const refreshed = await getAllUsers();
-                    setUsers(refreshed);
-                    setSelectedUser(null);
-                  } catch {
-                    alert("Password verification failed");
-                  } finally {
-                    setDeleting(false);
-                  }
-                }}
-                className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 disabled:opacity-50 transition"
-                disabled={deleting}
-              >
-                {deleting ? "Deleting..." : "Confirm Delete"}
-              </button>
-            </div>
+          <div className="bg-white/90 text-gray-800 backdrop-blur-xl p-6 rounded-2xl shadow-2xl w-full max-w-md animate-slide-in">
+
+            {/* DELETE MODE */}
+            {mode === "delete" && (
+              <>
+                <h2 className="text-2xl font-bold mb-2">Confirm Delete</h2>
+                <p className="text-gray-600 mb-4">
+                  Enter password for <b>{selectedUser.login}</b> to confirm deletion.
+                </p>
+
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full border p-2 rounded mb-4"
+                  placeholder="User password"
+                />
+
+                <div className="flex justify-end gap-3">
+                  <button
+                    onClick={() => setSelectedUser(null)}
+                    className="px-4 py-2 rounded border"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (!password) return;
+                      try {
+                        setDeleting(true);
+                        await deleteUser(
+                          selectedUser.id,
+                          selectedUser.login,
+                          password
+                        );
+                        setUsers(await getAllUsers());
+                        setSelectedUser(null);
+                      } catch {
+                        alert("Password verification failed");
+                      } finally {
+                        setDeleting(false);
+                      }
+                    }}
+                    className="bg-red-600 text-white px-4 py-2 rounded"
+                    disabled={deleting}
+                  >
+                    {deleting ? "Deleting..." : "Delete"}
+                  </button>
+                </div>
+              </>
+            )}
+
+            {/* PASSWORD MODE */}
+            {mode === "password" && (
+              <>
+                <h2 className="text-2xl font-bold mb-4">
+                  Change Password
+                </h2>
+
+                <p className="text-gray-600 mb-2">
+                  User: <b>{selectedUser.login}</b>
+                </p>
+
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="w-full border p-2 rounded mb-4"
+                  placeholder="New password"
+                />
+
+                <div className="flex justify-end gap-3">
+                  <button
+                    onClick={() => setSelectedUser(null)}
+                    className="px-4 py-2 rounded border"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (!newPassword) return;
+                      try {
+                        setChangingPassword(true);
+                        await fetch("http://127.0.0.1:9000/admin/change-password", {
+                          method: "POST",
+                          headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${localStorage.getItem("token")}`,
+                          },
+                          body: JSON.stringify({
+                            user_id: selectedUser.id,
+                            new_password: newPassword,
+                          }),
+                        });
+                        alert("Password changed successfully");
+                        setSelectedUser(null);
+                      } catch {
+                        alert("Failed to change password");
+                      } finally {
+                        setChangingPassword(false);
+                      }
+                    }}
+                    className="bg-blue-600 text-white px-4 py-2 rounded"
+                    disabled={changingPassword}
+                  >
+                    {changingPassword ? "Updating..." : "Update Password"}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
+
 
       <style jsx>{`
         .animate-slide-in {
