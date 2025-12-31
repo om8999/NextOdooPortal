@@ -6,6 +6,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from auth import create_access_token
 from middleware import auth_middleware
 from dotenv import load_dotenv
+from routers.kpi import router as kpi_router
+from routers.risk import router as risk_router
 import os
 
 load_dotenv()  # 👈 loads .env from project root
@@ -16,8 +18,6 @@ ODOO_ADMIN_PASS = os.getenv("ODOO_ADMIN_PASS")
 if not ODOO_ADMIN_USER or not ODOO_ADMIN_PASS:
     raise RuntimeError("Missing Odoo admin credentials")
 app = FastAPI()
-
-app.middleware("http")(auth_middleware)
 
 origins = [
     "http://localhost:3000",
@@ -31,7 +31,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
+app.middleware("http")(auth_middleware)
 
 class LoginModel(BaseModel):
     login: str
@@ -46,10 +46,10 @@ def login(data: LoginModel):
     try:
         print("=======Data===>",data)
         rpc = OdooRPC(
-            db="TESTING_SCANNING_SHIPMENT",
+            db="odudhane",
             user=data.login,
             pwd=data.password,
-            url="http://localhost:8069"
+            url="https://desktop10.office.protempo.nl"
         )
 
         user_data = rpc.call(
@@ -108,10 +108,10 @@ def signup(data: SignupModel):
     try:
         # 1️⃣ Connect as ADMIN / SERVICE USER
         admin_rpc = OdooRPC(
-            db="TESTING_SCANNING_SHIPMENT",
+            db="odudhane",
             user=ODOO_ADMIN_USER,          # or service user
             pwd=ODOO_ADMIN_PASS,  # 🔐 move to env later
-            url="http://localhost:8069"
+            url="https://desktop10.office.protempo.nl"
         )
 
         # 2️⃣ Check if user already exists
@@ -163,10 +163,10 @@ def signup(data: SignupModel):
 
         # 6️⃣ Authenticate newly created user
         user_rpc = OdooRPC(
-            db="TESTING_SCANNING_SHIPMENT",
+            db="odudhane",
             user=data.email,
             pwd=data.password,
-            url="http://localhost:8069"
+            url="https://desktop10.office.protempo.nl"
         )
 
         # 7️⃣ Create JWT
@@ -203,10 +203,10 @@ def get_users(request: Request):
     admin_only(request)
 
     admin_rpc = OdooRPC(
-        db="TESTING_SCANNING_SHIPMENT",
+        db="odudhane",
         user=ODOO_ADMIN_USER,
         pwd=ODOO_ADMIN_PASS,
-        url="http://localhost:8069"
+        url="https://desktop10.office.protempo.nl"
     )
 
     users = admin_rpc.call(
@@ -230,20 +230,20 @@ def delete_user(data: DeleteUserModel, request: Request):
     # 1️⃣ Verify user's password
     try:
         OdooRPC(
-            db="TESTING_SCANNING_SHIPMENT",
+            db="odudhane",
             user=data.login,
             pwd=data.password,
-            url="http://localhost:8069"
+            url="https://desktop10.office.protempo.nl"
         )
     except Exception:
         raise HTTPException(status_code=401, detail="Password verification failed")
 
     # 2️⃣ Delete user using admin
     admin_rpc = OdooRPC(
-        db="TESTING_SCANNING_SHIPMENT",
+        db="odudhane",
         user=ODOO_ADMIN_USER,
         pwd=ODOO_ADMIN_PASS,
-        url="http://localhost:8069"
+        url="https://desktop10.office.protempo.nl"
     )
 
     admin_rpc.call(
@@ -268,10 +268,10 @@ def change_password(data: ChangePasswordModel, request: Request):
 
     try:
         admin_rpc = OdooRPC(
-            db="TESTING_SCANNING_SHIPMENT",
+            db="odudhane",
             user=ODOO_ADMIN_USER,
             pwd=ODOO_ADMIN_PASS,
-            url="http://localhost:8069",
+            url="https://desktop10.office.protempo.nl",
         )
 
         admin_rpc.call(
@@ -284,3 +284,11 @@ def change_password(data: ChangePasswordModel, request: Request):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+
+
+
+app.include_router(risk_router)
+
+# app.include_router(kpi_router)

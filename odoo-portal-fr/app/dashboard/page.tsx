@@ -1,13 +1,69 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect , useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/hooks/useAuth";
 import { logout } from "@/app/lib/auth";
+import Card from "./components/Card";
 
 export default function DashboardPage() {
   const router = useRouter();
   const { user, loading, isAuthenticated } = useAuth();
+  const [avgReconcileDays, setAvgReconcileDays] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    fetch("http://localhost:9000/kpi/avg-reconcile-time", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("Unauthorized");
+        return res.json();
+      })
+      .then((data) => setAvgReconcileDays(data.average_days))
+      .catch(() => setAvgReconcileDays(null));
+  }, [isAuthenticated]);
+
+  const cards = [
+  {
+    key: "unreconciled",
+    title: "Unreconciled Items",
+    description: "Move lines pending reconciliation",
+    route: "/accounting/unreconciled",
+    gradient: "from-red-500 to-purple-600",
+  },
+  {
+    key: "invoice_risk",
+    title: "Invoice Risk Predictor",
+    description: "Predict late payment risk using AI",
+    route: "/dashboard/risk",
+    gradient: "from-orange-500 to-red-600",
+  },
+  {
+    key: "avg_reconcile",
+    title: "Avg Reconcile Time",
+    description: "Average days to reconcile entries",
+    route: "/accounting/kpis/avg-reconcile-time",
+    gradient: "from-yellow-500 to-purple-600",
+    value:
+    typeof avgReconcileDays === "number"
+      ? `${avgReconcileDays} days`
+      : "—",
+  },
+  {
+    key: "open_invoices",
+    title: "Open Invoices",
+    description: "Outstanding AR / AP amounts",
+    route: "/accounting/invoices/open",
+    gradient: "from-emerald-500 to-purple-600",
+  },
+];
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -59,18 +115,20 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Main Cards */}
+      {/* Accounting Dashboard Cards */}
       <main className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {["Partners", "Sales Orders", "Invoices"].map((card) => (
-          <div
-            key={card}
-            className="relative bg-white/20 backdrop-blur-xl rounded-2xl p-6 shadow-2xl hover:shadow-3xl transform transition-all hover:-translate-y-1 cursor-pointer"
-          >
-            <h2 className="text-xl font-bold text-white">{card}</h2>
-            <p className="text-white/80 mt-2">View and manage {card.toLowerCase()}.</p>
-          </div>
+        {cards.map((card) => (
+          <Card
+            key={card.key}
+            title={card.title}
+            description={card.description}
+            value={card.value}
+            gradient={card.gradient}
+            onClick={() => router.push(card.route)}
+          />
         ))}
       </main>
+
     </div>
   );
 }

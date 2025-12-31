@@ -1,0 +1,5 @@
+<odoo>
+    <template id="index_template" name="CRUD Frontend">
+        <t t-raw="request.env['ir.http'].sudo()._serve_file('/opt/custom/my_crud_op/static/src/html/index.html')"/>
+    </template>
+</odoo>

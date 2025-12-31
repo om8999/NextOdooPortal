@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="product_template_form_view_my_crud_op_inherit" model="ir.ui.view">
+        <field name="name">product.template.form.my.crud.op.inherit</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_form_view"/>
+        <field name="arch" type="xml">
+            <header>
+            <button name="open_crud_ui"
+                    type="object"
+                    string="Create Custom Product"
+                    class="btn-primary"
+                    />
+        </header>
+        </field>
+    </record>
+</odoo>

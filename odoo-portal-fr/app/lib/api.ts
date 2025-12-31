@@ -20,7 +20,7 @@ export async function getMe(): Promise<MeResponse> {
 
 export async function getAllUsers() {
   const token = localStorage.getItem("token");
-
+  console.log("Token----------------->",token)
   const res = await fetch("http://127.0.0.1:9000/admin/users", {
     headers: {
       Authorization: `Bearer ${token}`,

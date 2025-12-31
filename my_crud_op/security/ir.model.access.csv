@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_crud_product,crud.product,model_crud_product,,1,1,1,1
+access_account_kpi,account.kpi,model_account_kpi,,1,1,1,1
